@@ -6,25 +6,31 @@ class Portfolio:
     def __init__(self):
         columns = ["Name", "Quantity", "Average Buy Price", "Current Price", "Invested Value", "Current Value", "PnL"]
 
-        # checking for existing data and refreshing it
+        # check for existing data. if found then refresh it
         try:
-            self.stocks = pd.read_csv(r"data\stocks.csv")
+            self.stocks = pd.read_csv(r"data\stocks.csv", index_col=0)
+            
 
-        # else we'll create an empty df and add assets later
+        # else create new portfolio
         except Exception as e:
             print('No portfolio backup found for stocks')
+            print(e)
             self.stocks = pd.DataFrame(columns=columns)
         
         try:
-            self.crypto = pd.read_csv(r"data\crypto.csv")
+            self.crypto = pd.read_csv(r"data\crypto.csv", index_col=0)
         except Exception as e:
             print('No portfolio backup found for crypto')
             self.crypto = pd.DataFrame(columns=columns)
-    
+
 
     # --- PROPERTIES ---
     @property
-    def invested_value(self):
+    def empty(self) -> bool:
+        return self.stocks.empty and self.crypto.empty
+
+    @property
+    def invested_value(self) -> float:
         if self.stocks.empty and self.crypto.empty:
             return 0.0
         else:
@@ -33,7 +39,7 @@ class Portfolio:
             return stocks+crypto
 
     @property
-    def current_value(self):
+    def current_value(self) -> float:
         if self.stocks.empty and self.crypto.empty:
             return 0.0
         else:
@@ -42,62 +48,67 @@ class Portfolio:
             return stocks+crypto
 
     @property
-    def pnl(self):
+    def pnl(self) -> float:
         return round(self.current_value - self.invested_value, 2)
 
 
     # --- METHODS ---
-
-    def write_stocks(self):
+    def backup_stocks(self) -> None:
         self.stocks.to_csv(r"data\stocks.csv")
 
-    def write_crypto(self):
+    def backup_crypto(self) -> None:
         self.crypto.to_csv(r"data\crypto.csv")
 
-    def add_asset(self, symbol:str, quantity:float, buy_price:float, category: str = "Stocks"):
+    def update_asset(self, symbol:str, quantity:float, buy_price:float, category:str = "Stocks") -> None:
         if category == "Stocks":
             asset = Asset(symbol, quantity, buy_price)
-            new_asset =  asset.get_asset_df()
-            
-            # add assset to the df
+            updated_asset =  asset.get_info()
+            self.stocks.loc[symbol] = updated_asset.iloc[0]
+            self.backup_stocks()
+        elif category == "Cryptocurrencies":
+            asset = Asset(symbol, quantity, buy_price)
+            updated_asset =  asset.get_info()
+            self.crypto.loc[symbol] = updated_asset.iloc[0]
+            self.backup_crypto()
+
+    def add_stock(self, symbol:str, quantity:float, buy_price:float) -> None:
+        symbol = symbol.upper()
+        if not self.stocks.empty and symbol in self.stocks.index:
+            new_quantity = quantity + self.stocks.loc[symbol]['Quantity']
+            average_price = (self.stocks.loc[symbol]['Invested Value'] + (quantity * buy_price)) / new_quantity
+            self.update_asset(symbol, new_quantity, average_price)
+        else:
+            asset = Asset(symbol, quantity, buy_price)
+            new_asset =  asset.get_info()
             if self.stocks.empty: 
                 self.stocks= new_asset
             else:
                 self.stocks= pd.concat([self.stocks, new_asset])
-            self.write_stocks()
+            self.backup_stocks()
+        print(f"Added in Stocks portfolio: {symbol}")
 
-        else:
-            asset = Asset(f"{symbol}-USD", quantity, buy_price)
-            new_asset =  asset.get_asset_df()
+    def add_crypto(self, symbol:str, quantity: float, buy_price:float) -> None:
+        symbol = f"{symbol.upper()}-USD"
+        if not self.crypto.empty and symbol in self.crypto.index:
+            new_quantity = quantity + self.crypto.loc[symbol]['Quantity']
+            average_price = (self.crypto.loc[symbol]['Invested Value'] + (quantity * buy_price)) / new_quantity
+            self.update_asset(symbol, new_quantity, average_price)
+        else:    
+            asset = Asset(symbol, quantity, buy_price)
+            new_asset =  asset.get_info()
             
             # add assset to df
             if self.crypto.empty: 
                 self.crypto= new_asset
             else:
                 self.crypto= pd.concat([self.crypto, new_asset])
-            self.write_crypto()
-        print("Asset added successfully")
+            self.backup_crypto()
+            print(f"Added in Cryptocurrency portfolio: {symbol}")
 
-    def update_asset(self, symbol:str, quantity:float, buy_price:float, category:str = "Stocks"):
-        if category == "Stocks":
-            asset = Asset(symbol, quantity, buy_price)
-            updated_asset =  asset.get_asset_df()
-            self.stocks.loc[symbol.upper] = updated_asset
-            self.write_stocks()
-        else:
-            asset = Asset(f"{symbol}-USD", quantity, buy_price)
-            updated_asset =  asset.get_asset_df()
-            self.crypto.loc[f"{symbol}-USD"] = updated_asset
-            self.write_crypto()
-
-    def refresh_portfolio(self):
+    def refresh_portfolio(self) -> None:
         if not self.stocks.empty:
             for symbol, data in self.stocks.iterrows():
                 self.update_asset(symbol, data[0], data[1], data[2])
         if not self.crypto.empty:
             for symbol, data in self.crypto.iterrows():
                 self.update_asset(symbol, data[0], data[1], data[2])
-
-p = Portfolio()
-
-print("Stocks:", p.stocks)

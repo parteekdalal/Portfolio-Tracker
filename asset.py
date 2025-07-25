@@ -14,26 +14,26 @@ class Asset:
             self.name = self.ticker.info.get("shortName", "Unknown")
         else:
             self.name = "Unknown"
-        print("Asset imported successfully")
+        print(f"Asset added: {self.symbol}")
 
     """PROPERTIES"""
     @property
-    def current_price(self):
+    def current_price(self) -> float:
         if self.ticker:
             return round(self.ticker.history(period="1d")["Close"].iloc[-1], 2)
         else:
             return 0.0
         
     @property
-    def current_value(self):
+    def current_value(self) -> float:
         return round(self.quantity * self.current_price, 2)
     
     @property
-    def pnl(self):
+    def pnl(self) -> float:
         return round(self.current_value - self.invested_value, 2)
     
     """METHODS"""
-    def fetch_data(self):
+    def fetch_data(self) -> yf.Ticker | None:
         try:
             print(f"Fetching data for {self.symbol}")
             ticker =  yf.Ticker(self.symbol)
@@ -42,8 +42,8 @@ class Asset:
             print(f"Error fetching data")
             return None
 
-    # this returns a data frame containing the required details    
-    def get_asset_df(self):
+    # this returns a data frame containing the required details 
+    def get_info(self) -> pd.DataFrame:
         print("Gathering data")
         data =  [[
             self.name,
