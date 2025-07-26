@@ -1,3 +1,4 @@
+from tkinter import Event
 import customtkinter as ctk
 from PIL import Image
 from pathlib import Path
@@ -139,7 +140,8 @@ class PortfolioTracker(ctk.CTk):
             ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-50, y=5, anchor="ne")
             ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-50, y=30, anchor="ne")
 
-            asset_card_button = ctk.CTkButton(asset_card, text='',image=self.icons[0], width=40, height=40, bg_color="transparent")
+            asset_card_button = ctk.CTkButton(asset_card, text='',image=self.icons[0], width=40, height=40)
+            asset_card_button.bind("<Button-1>", command=lambda e: self.asset_card_menu(e, asset_card, symbol))
             asset_card_button.place(relx=1.0, x=-8, y=10, anchor='ne')
 
             asset_card_info = ctk.CTkFrame(asset_card, width=890, height=60, corner_radius=10)
@@ -211,3 +213,6 @@ class PortfolioTracker(ctk.CTk):
         except Exception as e:
             print(f'could not load {theme} theme')
             print(e)
+
+    def asset_card_menu(self, event, master: ctk.CTkFrame ,symbol:str):
+        event.widget
