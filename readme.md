@@ -8,8 +8,6 @@ A desktop application built with Python that helps users track their investment 
 2. Support for multiple asset classes:
    - Stocks
    - Cryptocurrencies
-   - Forex/Currency (planned)
-   - Commodities (planned)
 3. Individual asset performance monitoring
 4. Profit/Loss tracking
 5. Modern GUI interface
@@ -26,7 +24,6 @@ A desktop application built with Python that helps users track their investment 
 - **Architecture**: Object-oriented design with separate classes for Portfolio, Assets, and UI
 - **Data Storage**: CSV files in the `data/` directory
 - **User Interface**: Modern, responsive GUI built with CustomTkinter
-- **Theme Support**: Multiple built-in themes available in the `themes/` directory
 
 ## Installation and Usage:
 
@@ -47,13 +44,11 @@ A desktop application built with Python that helps users track their investment 
 - `portfolio.py` - Portfolio management class
 - `asset.py` - Asset class definition
 - `data/` - Directory containing portfolio data
-- `themes/` - CustomTkinter theme files
+- `themes/` - CustomTkinter theme file
 
 ## Future Enhancements:
 
-* Support for Forex/Currency trading
-* Support for Commodities trading
+* Support for Forex/Currency assets
+* Support for Commodities assets
 * Enhanced data visualization
 * Portfolio analytics and reports
-
-

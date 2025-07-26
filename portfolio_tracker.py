@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from PIL import Image
+from pathlib import Path
 from portfolio import Portfolio
 
 class PortfolioTracker(ctk.CTk):
@@ -7,6 +8,7 @@ class PortfolioTracker(ctk.CTk):
         super().__init__()
         self.title("Portfolio Tracker")
         self.geometry("920x700+50+50")
+        self.load_theme()
 
         self.portfolio = Portfolio()
         self.init_icons()
@@ -200,3 +202,12 @@ class PortfolioTracker(ctk.CTk):
                 ctk.CTkLabel(frame3, text=f"${symbol.PnL}", font=("Roboto", 20), text_color="green").pack(pady=1, padx=1)
             else:
                 ctk.CTkLabel(frame3, text=f"${symbol.PnL}", font=("Roboto", 20), text_color="red").pack(pady=1, padx=1)
+            
+    def load_theme(self, theme:str = 'orange', mode:str = 'System'):
+        ctk.set_appearance_mode(mode)
+        try:
+            theme_path = Path(f'themes/{theme}.json')
+            ctk.set_default_color_theme(theme_path)
+        except Exception as e:
+            print(f'could not load {theme} theme')
+            print(e)
