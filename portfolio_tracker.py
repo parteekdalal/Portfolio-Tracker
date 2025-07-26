@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from PIL import Image
 from portfolio import Portfolio
 
 class PortfolioTracker(ctk.CTk):
@@ -8,9 +9,22 @@ class PortfolioTracker(ctk.CTk):
         self.geometry("920x700+50+50")
 
         self.portfolio = Portfolio()
+        self.init_icons()
         self.init_ui()
         self.restock_portfolio_frame()
-        
+
+    def init_icons(self) -> None:
+        self.icons_list = ['menu.ico']
+        self.icons = []
+        try:
+            for icon in self.icons_list:
+                img_path = f'icons/{icon}'
+                img = ctk.CTkImage(light_image=Image.open(img_path), dark_image=Image.open(img_path))
+                self.icons.append(img)
+                print('Icon loaded successfully')
+        except Exception as e:
+            print('Error loading icon:', e)
+
     def init_ui(self) -> None:
         ctk.CTkLabel(self, text="Portfolio Tracker", font=("Arial", 24, "bold")).pack(pady=10, padx=10)
 
@@ -120,8 +134,11 @@ class PortfolioTracker(ctk.CTk):
 
             ctk.CTkLabel(asset_card, text=f"{symbol.Name}", font=("Roboto", 24, "bold")).place(x=5, y=5)
             ctk.CTkLabel(asset_card, text=f"{symbol[4]} USD").place(x=6, y=32)
-            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-8, y=5, anchor="ne")
-            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-8, y=30, anchor="ne")
+            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-50, y=5, anchor="ne")
+            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-50, y=30, anchor="ne")
+
+            asset_card_button = ctk.CTkButton(asset_card, text='',image=self.icons[0], width=40, height=40, bg_color="transparent")
+            asset_card_button.place(relx=1.0, x=-8, y=10, anchor='ne')
 
             asset_card_info = ctk.CTkFrame(asset_card, width=890, height=60, corner_radius=10)
             asset_card_info.place(x=15, y=60)
@@ -153,7 +170,6 @@ class PortfolioTracker(ctk.CTk):
         ctk.CTkLabel(crypto_frame, text="Stocks", font=("Roboto", 24, "bold")).pack(padx=5, pady=5, fill="x")
 
         for symbol in self.portfolio.crypto.itertuples():
-            print(symbol)
             asset_card = ctk.CTkFrame(crypto_frame, width=940, height=130, border_width=2)
             asset_card.pack(pady=5, padx=10, fill="x")
 
