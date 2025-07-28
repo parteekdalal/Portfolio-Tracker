@@ -48,7 +48,5 @@ A desktop application built with Python that helps users track their investment 
 
 ## Future Enhancements:
 
-* Support for Forex/Currency assets
-* Support for Commodities assets
 * Enhanced data visualization
 * Portfolio analytics and reports

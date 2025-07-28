@@ -1,40 +1,54 @@
-from tkinter import Event
+import threading
+import requests
+from tkinter import Event, Menu, messagebox
 import customtkinter as ctk
-from PIL import Image
 from pathlib import Path
+
 from portfolio import Portfolio
 
 class PortfolioTracker(ctk.CTk):
     def __init__(self):
+        t1 = threading.Thread(target=self.load_theme)
+        t1.start()
+        self.objects ={
+            "asset_cards": {
+                "Stocks": {str : ctk.CTkFrame},
+                "Cryptocurrencies": {str : ctk.CTkFrame}
+            }
+        }
         super().__init__()
         self.title("Portfolio Tracker")
-        self.geometry("920x700+50+50")
-        self.load_theme()
+        self.geometry("950x600+100+50")
 
         self.portfolio = Portfolio()
-        self.init_icons()
+        t1.join()
         self.init_ui()
         self.restock_portfolio_frame()
 
-    def init_icons(self) -> None:
-        self.icons_list = ['menu.ico']
-        self.icons = []
+
+    @property
+    def isConnected(self) -> bool:
         try:
-            for icon in self.icons_list:
-                img_path = f'icons/{icon}'
-                img = ctk.CTkImage(light_image=Image.open(img_path), dark_image=Image.open(img_path))
-                self.icons.append(img)
-                print('Icon loaded successfully')
-        except Exception as e:
-            print('Error loading icon:', e)
+            requests.get(url='https://www.google.com/', timeout=3)
+            return True
+        except requests.ConnectionError:
+            return False
+
+
+    """ --- METHODS --- """
+    def checkConnection(self):
+        if not self.isConnected:
+            response = messagebox.askretrycancel(title='Connection failed', message="Can't connect to the internet!", detail='Check you network connection and try again.')
+            if response:
+                self.checkConnection()
 
     def init_ui(self) -> None:
+
         ctk.CTkLabel(self, text="Portfolio Tracker", font=("Arial", 24, "bold")).pack(pady=10, padx=10)
 
-        #NOTE portfolio head
+        # portfolio head
         self.portfolio_head = ctk.CTkFrame(self.master)
         self.portfolio_head.pack(padx=10, pady=5, fill='x')
-
         ctk.CTkLabel(self.portfolio_head, text="Your Portfolio:", font=("Roboto", 18, "bold")).grid(row=0, column=0, padx=10, pady=10, columnspan=2)
 
         # current value
@@ -57,6 +71,8 @@ class PortfolioTracker(ctk.CTk):
 
         self.portfolio_frame = ctk.CTkScrollableFrame(self)
         self.portfolio_frame.pack(pady=5, padx=10, fill="both", expand=True)
+        t1 = threading.Thread(target=self.checkConnection)
+        t1.start()
 
     def add_asset_dialog(self, master) -> None:
         # add asset dialog box (grid)
@@ -92,10 +108,11 @@ class PortfolioTracker(ctk.CTk):
         self.asset_info_dialog.grab_set()
 
         ctk.CTkButton(self.asset_info_dialog, text="Cancel", command=self.asset_info_dialog.destroy).pack(pady=10, padx=10, side="right")
-        ctk.CTkButton(self.asset_info_dialog, text="Continue", command=lambda: self.add_asset(symbol.get().upper(), float(quantity.get()), float(buy_price.get()), category.get())).pack(pady=10, padx=10, side="right")
+        ctk.CTkButton(self.asset_info_dialog, text="Continue", command=lambda: self.add_asset(symbol.get(), float(quantity.get()), float(buy_price.get()), category.get())).pack(pady=10, padx=10, side="right")
 
     def add_asset(self, symbol:str, quantity:float, buy_price:float, category: str):
         self.asset_info_dialog.destroy()
+        messagebox.showinfo(title="Adding asset", message="Your asset will be added soon!", detail=f"Adding asset: {quantity} {symbol.upper()} @ {buy_price}", icon="info")
         if category == "Stocks":
             self.portfolio.add_stock(symbol, quantity, buy_price)
         elif category == 'Cryptocurrencies':
@@ -126,23 +143,23 @@ class PortfolioTracker(ctk.CTk):
                 self.load_crypto()
 
     def load_stocks(self):
-        stocks_frame = ctk.CTkFrame(self.portfolio_frame)
-        stocks_frame.pack(pady=5, padx=10, fill="x")
+        self.stocks_frame = ctk.CTkFrame(self.portfolio_frame)
+        self.stocks_frame.pack(pady=5, padx=10, fill="x")
         
-        ctk.CTkLabel(stocks_frame, text="Stocks", font=("Roboto", 24, "bold")).pack(padx=5, pady=5, fill="x")
+        ctk.CTkLabel(self.stocks_frame, text="Stocks", font=("Roboto", 24, "bold")).pack(padx=5, pady=5, fill="x")
 
         for symbol in self.portfolio.stocks.itertuples():
-            asset_card = ctk.CTkFrame(stocks_frame, width=940, height=130, border_width=2)
+            asset_card = ctk.CTkFrame(self.stocks_frame, width=940, height=130, border_width=2)
             asset_card.pack(pady=5, padx=10, fill="x")
+            asset_card.bind("<Button-3>", command=lambda e, s=symbol[0]: self.asset_card_menu(e, s, 'Stocks'))
+
+
+            self.objects["asset_cards"]["Stocks"][symbol[0]] = asset_card
 
             ctk.CTkLabel(asset_card, text=f"{symbol.Name}", font=("Roboto", 24, "bold")).place(x=5, y=5)
             ctk.CTkLabel(asset_card, text=f"{symbol[4]} USD").place(x=6, y=32)
-            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-50, y=5, anchor="ne")
-            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-50, y=30, anchor="ne")
-
-            asset_card_button = ctk.CTkButton(asset_card, text='',image=self.icons[0], width=40, height=40)
-            asset_card_button.bind("<Button-1>", command=lambda e: self.asset_card_menu(e, asset_card, symbol))
-            asset_card_button.place(relx=1.0, x=-8, y=10, anchor='ne')
+            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-60, y=5, anchor="ne")
+            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-60, y=30, anchor="ne")
 
             asset_card_info = ctk.CTkFrame(asset_card, width=890, height=60, corner_radius=10)
             asset_card_info.place(x=15, y=60)
@@ -170,17 +187,22 @@ class PortfolioTracker(ctk.CTk):
     def load_crypto(self):
         crypto_frame = ctk.CTkFrame(self.portfolio_frame)
         crypto_frame.pack(pady=5, padx=10, fill="x")
-        
-        ctk.CTkLabel(crypto_frame, text="Stocks", font=("Roboto", 24, "bold")).pack(padx=5, pady=5, fill="x")
+
+        ctk.CTkLabel(crypto_frame, text="Cryptocurrencies", font=("Roboto", 24, "bold")).pack(padx=5, pady=5, fill="x")
 
         for symbol in self.portfolio.crypto.itertuples():
             asset_card = ctk.CTkFrame(crypto_frame, width=940, height=130, border_width=2)
             asset_card.pack(pady=5, padx=10, fill="x")
+            asset_card.bind("<Button-3>", command=lambda e, s=symbol[0]: self.asset_card_menu(e, s, 'Cryptocurrencies'))
+
+            self.objects["asset_cards"]['Cryptocurrencies'][symbol[0]] = asset_card
+
 
             ctk.CTkLabel(asset_card, text=f"{symbol.Name}", font=("Roboto", 24, "bold")).place(x=5, y=5)
             ctk.CTkLabel(asset_card, text=f"{symbol[4]} USD").place(x=6, y=32)
-            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-8, y=5, anchor="ne")
-            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-8, y=30, anchor="ne")
+            ctk.CTkLabel(asset_card, text=f"{symbol[2]} QTY").place(relx=1.0, x=-60, y=5, anchor="ne")
+            ctk.CTkLabel(asset_card, text=f"${symbol[3]} AVG").place(relx=1.0, x=-60, y=30, anchor="ne")
+            
 
             asset_card_info = ctk.CTkFrame(asset_card, width=890, height=60, corner_radius=10)
             asset_card_info.place(x=15, y=60)
@@ -214,5 +236,23 @@ class PortfolioTracker(ctk.CTk):
             print(f'could not load {theme} theme')
             print(e)
 
-    def asset_card_menu(self, event, master: ctk.CTkFrame ,symbol:str):
-        event.widget
+    def asset_card_menu(self, event:Event, symbol:str, category:str):
+        master = event.widget
+        menu = Menu(master, tearoff=False)
+        menu.add_command(label="Remove Asset", command=lambda: self.remove_asset(symbol, category))
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def remove_asset(self, symbol:str, category:str) -> None:
+        self.portfolio.remove_asset(symbol, category)
+        category_dict = self.objects["asset_cards"].get(category)
+
+        if category_dict and symbol in category_dict:
+            asset_card = category_dict[symbol]
+        if asset_card is not None:
+            asset_card.destroy()
+        if not category_dict:
+            self.restock_portfolio_frame()
+        threading.Thread(target=self.refresh).start()
